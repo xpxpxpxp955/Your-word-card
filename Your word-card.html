@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>单词记忆卡 - 六级核心词汇</title>
+    <style>
+        :root {
+            --primary-color: #6C5BFF;
+            --secondary-color: #FF7F50;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            width: 1000px;
+            height: 680px;
+            perspective: 1200px;
+            margin: 40px 0 150px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            border-radius: 25px;
+            box-shadow: 0 15px 40px rgba(108,91,255,0.3);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: linear-gradient(145deg, #2d2d44 0%, #1f1f38 100%);
+            border-radius: 25px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .front {
+            justify-content: center;
+        }
+
+        .back {
+            transform: rotateY(180deg);
+            overflow-y: auto;
+        }
+
+        .word-display {
+            font-size: 3.2em;
+            color: var(--primary-color);
+            text-shadow: 0 0 25px rgba(108,91,255,0.4);
+            margin: 20px 0;
+            letter-spacing: 4px;
+        }
+
+        .hint {
+            font-size: 1.3em;
+            color: #FFD700;
+            margin-bottom: 25px;
+        }
+
+        .pronunciation {
+            display: flex;
+            gap: 35px;
+            margin: 25px 0;
+        }
+
+        .speech-btn {
+            padding: 16px 40px;
+            border-radius: 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        #enSpeech {
+            background: #6C5BFF;
+            color: white;
+        }
+
+        #cnSpeech {
+            background: #FF7F50;
+            color: white;
+        }
+
+        .example-container {
+            width: 100%;
+            margin: 20px 0;
+            padding: 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+        }
+
+        .example-item {
+            margin: 18px 0;
+        }
+
+        .example-en {
+            font-size: 1.15em;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .example-cn {
+            font-size: 0.95em;
+            color: #FFD700;
+            padding-left: 20px;
+            border-left: 3px solid var(--secondary-color);
+        }
+
+        .memory-section {
+            width: 100%;
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(45deg, #2d2d44, #1f1f38);
+            border-radius: 15px;
+        }
+
+        .memory-item {
+            margin: 18px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+
+        .navigation {
+            margin: 30px 0 50px;
+            display: flex;
+            gap: 60px;
+        }
+
+        button {
+            padding: 20px 50px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 30px;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(108,91,255,0.3);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            background: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card" id="mainCard">
+            <div class="card-face front">
+                <div class="word-display" id="wordDisplay"></div>
+                <div class="hint" id="hintText"></div>
+            </div>
+            <div class="card-face back">
+                <div class="word-display" id="fullWord"></div>
+                
+                <div class="pronunciation">
+                    <div class="speech-btn" id="enSpeech" onclick="speak('en', event)">🎧 英文发音</div>
+                    <div class="speech-btn" id="cnSpeech" onclick="speak('cn', event)">📖 中文释义</div>
+                </div>
+
+                <div class="example-container">
+                    <div id="examples">
+                        <!-- 示例将通过JavaScript动态插入 -->
+                    </div>
+                </div>
+
+                <div class="memory-section" id="memoryTips">
+                    <!-- 记忆方法将通过JavaScript动态插入 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button onclick="changeCard(-1)">◄ 上一个</button>
+        <button onclick="changeCard(1)">下一个 ►</button>
+    </div>
+
+    <script>
+        const words = [
+    {
+        "word": "a",
+        "translation": "一(个);每一(个);(同类事物中)任一个",
+        "enPron": "/ə/",
+        "cnPron": "yī (gè)",
+        "examples": [
+            {"en": "She found a rare coin.", "cn": "她发现了一枚稀有硬币"},
+            {"en": "A cat was sitting on the windowsill.", "cn": "一只猫坐在窗台上"}
+        ],
+        "memoryTips": [
+            "字母A形状像金字塔尖→表示'一个'",
+            "对比记忆：a/an区别在于首字母发音",
+            "联想：A是字母表第一个→表示最小单位"
+        ]
+    },
+    {
+        "word": "abandon",
+        "translation": "离弃，丢弃;遗弃，抛弃;放弃",
+        "enPron": "/əˈbændən/",
+        "cnPron": "lí qì, pāo qì",
+        "examples": [
+            {"en": "They had to abandon the sinking ship.", "cn": "他们不得不弃船逃生"},
+            {"en": "Never abandon your dreams.", "cn": "永远不要放弃你的梦想"}
+        ],
+        "memoryTips": [
+            "词根记忆：a-（离开）+ band（捆绑）+ on→解开捆绑→抛弃",
+            "谐音：'啊板凳'→抛弃旧板凳",
+            "对比记忆：abandon vs. desert 都含'抛弃'义"
+        ]
+    },
+    {
+        "word": "abdomen",
+        "translation": "腹，下腹(胸部到腿部的部分)",
+        "enPron": "/ˈæbdəmən/",
+        "cnPron": "fù, xià fù",
+        "examples": [
+            {"en": "The doctor examined her abdomen.", "cn": "医生检查了她的腹部"},
+            {"en": "Insects have segmented abdomens.", "cn": "昆虫有分节的腹部"}
+        ],
+        "memoryTips": [
+            "词根记忆：abdo-（隐藏）+ men→隐藏内脏的部位",
+            "谐音：'艾布德门'→腹部像一扇门",
+            "对比记忆：abdomen（学术用语）vs. belly（口语）"
+        ]
+    },
+    {
+        "word": "abide",
+        "translation": "遵守;坚持",
+        "enPron": "/əˈbaɪd/",
+        "cnPron": "zūn shǒu, jiān chí",
+        "examples": [
+            {"en": "We must abide by the rules.", "cn": "我们必须遵守规则"},
+            {"en": "I can't abide his arrogance.", "cn": "我无法忍受他的傲慢"}
+        ],
+        "memoryTips": [
+            "词根记忆：a-（加强）+ bide（停留）→ 持续遵守",
+            "谐音：'额白的'→明白规则就要遵守",
+            "对比记忆：abide by = comply with"
+        ]
+    },
+    {
+        "word": "ability",
+        "translation": "能力;本领;才能，才干;专门技能，天资",
+        "enPron": "/əˈbɪləti/",
+        "cnPron": "néng lì, cái néng",
+        "examples": [
+            {"en": "He has the ability to solve complex problems.", "cn": "他有解决复杂问题的能力"},
+            {"en": "Language learning requires cognitive abilities.", "cn": "语言学习需要认知能力"}
+        ],
+        "memoryTips": [
+            "词根记忆：able（能够的）的名词形式",
+            "联想：ability结尾的-ity常见于抽象名词",
+            "对比记忆：ability（后天能力） vs. talent（先天才能）"
+        ]
+    },
+    {
+        "word": "able",
+        "translation": "有(能力、时间、知识等)做某事，有本事的",
+        "enPron": "/ˈeɪb(ə)l/",
+        "cnPron": "yǒu néng lì de",
+        "examples": [
+            {"en": "She is able to speak five languages.", "cn": "她能说五种语言"},
+            {"en": "Will you be able to attend the meeting?", "cn": "你能参加会议吗？"}
+        ],
+        "memoryTips": [
+            "词根记忆：-able表示'能够...的'",
+            "谐音：'阿伯'→有能力的阿伯",
+            "对比记忆：able（有能力） vs. capable（有技能）"
+        ]
+    },
+    {
+        "word": "abnormal",
+        "translation": "反常的，不正常的，不规则的",
+        "enPron": "/æbˈnɔːrm(ə)l/",
+        "cnPron": "fǎn cháng de",
+        "examples": [
+            {"en": "The test results showed abnormal cells.", "cn": "检测结果显示异常细胞"},
+            {"en": "Such cold weather is abnormal for May.", "cn": "五月出现这种寒冷天气不正常"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（偏离）+ normal（正常）→不正常",
+            "谐音：'艾布闹某'→反常闹事",
+            "对比记忆：abnormal vs. irregular"
+        ]
+    },
+    {
+        "word": "aboard",
+        "translation": "在船(飞机、车)上;上船(飞机)",
+        "enPron": "/əˈbɔːrd/",
+        "cnPron": "zài chuán/shàng chuán",
+        "examples": [
+            {"en": "Welcome aboard Flight 207.", "cn": "欢迎乘坐207号航班"},
+            {"en": "All passengers must be aboard by 8 PM.", "cn": "所有乘客须在晚8点前登机"}
+        ],
+        "memoryTips": [
+            "拆分记忆：a-（在...状态）+ board（甲板）→在甲板上",
+            "联想：board（木板）→登船踏木板",
+            "对比记忆：aboard（在交通工具上） vs. abroad（在国外）"
+        ]
+    },
+    {
+        "word": "abolish",
+        "translation": "废除(法律、习惯等);取消",
+        "enPron": "/əˈbɑːlɪʃ/",
+        "cnPron": "fèi chú, qǔ xiāo",
+        "examples": [
+            {"en": "Slavery was abolished in the 19th century.", "cn": "奴隶制在19世纪被废除"},
+            {"en": "The tax was abolished last year.", "cn": "该税种去年被取消"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（离开）+ ol（生长）+ ish→阻止生长→废除",
+            "谐音：'恶霸历史'→废除恶霸制度",
+            "对比记忆：abolish（彻底废除） vs. cancel（临时取消）"
+        ]
+    },
+    {
+        "word": "abound",
+        "translation": "大量存在;(in,with)充满，富于",
+        "enPron": "/əˈbaʊnd/",
+        "cnPron": "dà liáng cún zài",
+        "examples": [
+            {"en": "The forest abounds with wildlife.", "cn": "森林里野生动物繁多"},
+            {"en": "Opportunities abound in this field.", "cn": "这个领域充满机会"}
+        ],
+        "memoryTips": [
+            "词根记忆：a-（加强）+ bound（跳跃）→大量跃动",
+            "谐音：'额绑的'→被大量绑在一起",
+            "对比记忆：abound（充满） vs. plenty（足够）"
+        ]
+    },
+    {
+        "word": "about",
+        "translation": "在周围;大约 prep.关于;在周围 a.准备",
+        "enPron": "/əˈbaʊt/",
+        "cnPron": "guān yú, dà yuē",
+        "examples": [
+            {"en": "Let's talk about the project.", "cn": "我们谈谈这个项目吧"},
+            {"en": "There were about 50 people at the party.", "cn": "派对大约有50人参加"}
+        ],
+        "memoryTips": [
+            "字母组合：a+bout（外面）→关于周围的事物",
+            "多义记忆：about作介词和副词的不同用法",
+            "对比记忆：about（大约） vs. approximately（更正式）"
+        ]
+    },
+    {
+        "word": "above",
+        "translation": "上述的 ad.在上面 prep.在..之上，高于",
+        "enPron": "/əˈbʌv/",
+        "cnPron": "zài...shàng fāng",
+        "examples": [
+            {"en": "The picture hangs above the sofa.", "cn": "画挂在沙发上方"},
+            {"en": "Temperatures will remain above freezing.", "cn": "气温将保持在零度以上"}
+        ],
+        "memoryTips": [
+            "图形记忆：字母b像向上的箭头→在...上方",
+            "反义记忆：above（上方） vs. below（下方）",
+            "对比记忆：above（位置高） vs. over（垂直上方）"
+        ]
+    },
+    {
+        "word": "abroad",
+        "translation": "到国外，在国外;在传播，在流传",
+        "enPron": "/əˈbrɔːd/",
+        "cnPron": "zài guó wài",
+        "examples": [
+            {"en": "She plans to study abroad next year.", "cn": "她计划明年出国留学"},
+            {"en": "The news quickly spread abroad.", "cn": "消息很快传开了"}
+        ],
+        "memoryTips": [
+            "拆分记忆：a-（到）+ broad（广阔）→到广阔天地→出国",
+            "谐音：'饿不绕的'→出国不怕绕远",
+            "对比记忆：abroad（国外） vs. overseas（海外）"
+        ]
+    },
+    {
+        "word": "abrupt",
+        "translation": "突然的，出其不意的;(行为等)粗鲁无礼的",
+        "enPron": "/əˈbrʌpt/",
+        "cnPron": "tū rán de, cū lǔ de",
+        "examples": [
+            {"en": "The meeting came to an abrupt end.", "cn": "会议突然结束"},
+            {"en": "His abrupt manner offended some people.", "cn": "他粗鲁的态度冒犯了某些人"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（脱离）+ rupt（打破）→突然打破",
+            "谐音：'额不拉破它'→突然拉破",
+            "对比记忆：abrupt（突然且粗鲁） vs. sudden（单纯突然）"
+        ]
+    },
+    {
+        "word": "absence",
+        "translation": "缺乏，不存在;缺席，不在;缺席的时间",
+        "enPron": "/ˈæbsəns/",
+        "cnPron": "quē fá, quē xí",
+        "examples": [
+            {"en": "His absence was noticed by everyone.", "cn": "大家都注意到他缺席了"},
+            {"en": "In the absence of evidence, we can't proceed.", "cn": "缺乏证据，我们无法继续"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（离开）+ sence（存在）→不存在",
+            "谐音：'艾布森死'→缺席导致森（sen）死了",
+            "对比记忆：absence（名词） vs. absent（形容词）"
+        ]
+    },
+    {
+        "word": "absent",
+        "translation": "缺席的;缺乏的,不存在的;心不在焉的",
+        "enPron": "/ˈæbsənt/",
+        "cnPron": "quē xí de",
+        "examples": [
+            {"en": "Three students were absent today.", "cn": "今天有三个学生缺席"},
+            {"en": "She had an absent look on her face.", "cn": "她脸上带着心不在焉的表情"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（离开）+ sent（存在）→不存在",
+            "谐音：'艾布森特'→特别爱不在",
+            "对比记忆：absent（缺席） vs. present（出席）"
+        ]
+    },
+    {
+        "word": "absolute",
+        "translation": "绝对的，完全的;确实的，肯定的",
+        "enPron": "/ˈæbsəluːt/",
+        "cnPron": "jué duì de",
+        "examples": [
+            {"en": "The king had absolute power.", "cn": "国王拥有绝对权力"},
+            {"en": "It's an absolute certainty.", "cn": "这是确定无疑的"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（脱离）+ solute（解开）→完全解开的→绝对的",
+            "谐音：'艾布所鲁特'→所向披靡的绝对",
+            "对比记忆：absolute（绝对） vs. relative（相对）"
+        ]
+    },
+    {
+        "word": "absorb",
+        "translation": "吸收(水、光、蒸汽等);使全神贯注",
+        "enPron": "/əbˈzɔːrb/",
+        "cnPron": "xī shōu, quán shén guàn zhù",
+        "examples": [
+            {"en": "Plants absorb sunlight for photosynthesis.", "cn": "植物吸收阳光进行光合作用"},
+            {"en": "The book completely absorbed her attention.", "cn": "这本书完全吸引了她的注意力"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（加强）+ sorb（吸收）→强力吸收",
+            "谐音：'额伯骚布'→用布吸收骚味",
+            "对比记忆：absorb（吸收） vs. adsorb（吸附）"
+        ]
+    },
+    {
+        "word": "abstract",
+        "translation": "抽象的 n.摘要，梗概 vt.提取;摘录要点",
+        "enPron": "/ˈæbstrækt/",
+        "cnPron": "chōu xiàng de, zhāi yào",
+        "examples": [
+            {"en": "Modern art often uses abstract forms.", "cn": "现代艺术常用抽象形式"},
+            {"en": "Please write an abstract of your paper.", "cn": "请写下论文摘要"}
+        ],
+        "memoryTips": [
+            "词根记忆：abs-（离开）+ tract（拉）→从具体中拉出→抽象",
+            "谐音：'艾布思揣克特'→抽象需要思考揣摩",
+            "对比记忆：abstract（抽象） vs. concrete（具体）"
+        ]
+    },
+    {
+        "word": "absurd",
+        "translation": "荒谬的，荒诞的，荒唐可笑的;不合理的",
+        "enPron": "/əbˈsɜːrd/",
+        "cnPron": "huāng miù de",
+        "examples": [
+            {"en": "It's absurd to expect perfection.", "cn": "期望完美是荒谬的"},
+            {"en": "The plot of the movie was utterly absurd.", "cn": "这部电影的情节极其荒诞"}
+        ],
+        "memoryTips": [
+            "词根记忆：ab-（加强）+ surd（聋的）→听不进道理→荒谬",
+            "谐音：'额伯色的'→颜色搭配荒谬",
+            "对比记忆：absurd（违反逻辑） vs. ridiculous（可笑）"
+        ]
+    },
+    {
+        "word": "abundance",
+        "translation": "丰富，充裕，大量",
+        "enPron": "/əˈbʌndəns/",
+        "cnPron": "fēng fù, chōng yù",
+        "examples": [
+            {"en": "The region has an abundance of natural resources.", "cn": "该地区自然资源丰富"},
+            {"en": "Food was served in abundance at the feast.", "cn": "宴会上食物供应充足"}
+        ],
+        "memoryTips": [
+            "词根记忆：abund（丰富）+ ance（名词后缀）",
+            "谐音：'额帮等死'→帮派等人等到死也没来（反讽充裕）",
+            "对比记忆：abundance（富足） vs. scarcity（短缺）"
+        ]
+    }
+];
+
+        let currentIndex = 0;
+        const synth = window.speechSynthesis;
+        const card = document.getElementById('mainCard');
+
+        function generateMaskedWord(word) {
+            const letters = word.split('');
+            const maskCount = Math.floor(letters.length * 0.6);
+            const maskPositions = new Set();
+            
+            while(maskPositions.size < maskCount) {
+                maskPositions.add(Math.floor(Math.random() * letters.length));
+            }
+            
+            return letters.map((letter, index) => 
+                maskPositions.has(index) ? '_' : letter
+            ).join(' ');
+        }
+
+        function updateCard() {
+            const currentWord = words[currentIndex];
+            
+            // 更新正面内容
+            document.getElementById('wordDisplay').textContent = generateMaskedWord(currentWord.word);
+            document.getElementById('hintText').textContent = `中文提示：${currentWord.translation.split('，')[0]}...`;
+            
+            // 更新背面内容
+            document.getElementById('fullWord').textContent = currentWord.word;
+            
+            // 更新例句
+            const examplesContainer = document.getElementById('examples');
+            examplesContainer.innerHTML = currentWord.examples.map((ex, index) => `
+                <div class="example-item">
+                    <div class="example-en">${index + 1}. ${ex.en}</div>
+                    <div class="example-cn">${ex.cn}</div>
+                </div>
+            `).join('');
+            
+            // 更新记忆方法
+            const memoryContainer = document.getElementById('memoryTips');
+            memoryContainer.innerHTML = `
+                <h3>记忆方法</h3>
+                ${currentWord.memoryTips.map((tip, index) => `
+                    <div class="memory-item">${index + 1}. ${tip}</div>
+                `).join('')}
+            `;
+        }
+
+        function toggleCard() {
+            card.classList.toggle('flipped');
+        }
+
+        function changeCard(direction) {
+            if (synth.speaking) synth.cancel();
+            currentIndex = (currentIndex + direction + words.length) % words.length;
+            if (card.classList.contains('flipped')) toggleCard();
+            setTimeout(updateCard, 500);
+        }
+
+        function speak(lang, event) {
+            event.stopPropagation();
+            if (synth.speaking) synth.cancel();
+
+            const wordData = words[currentIndex];
+            const text = lang === 'en' ? wordData.word : wordData.translation;
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang === 'en' ? 'en-US' : 'zh-CN';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.2;
+            
+            utterance.onstart = () => {
+                const btn = event.target.closest('.speech-btn');
+                if (btn) btn.style.transform = 'scale(0.95)';
+            }
+            
+            utterance.onend = () => {
+                const btns = document.querySelectorAll('.speech-btn');
+                btns.forEach(btn => btn.style.transform = 'scale(1)');
+            }
+            
+            synth.speak(utterance);
+        }
+
+        // 初始化
+        updateCard();
+        card.addEventListener('click', toggleCard);
+    </script>
+</body>
+</html>
